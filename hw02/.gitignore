@@ -1,0 +1,6 @@
+*.o
+readings
+readings_new
+readings_original.c
+hw02_starter.zip
+tests/test_stats
