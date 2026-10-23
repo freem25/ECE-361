@@ -1,0 +1,9 @@
+door
+motion
+door
+# this is a comment
+
+temperature
+motion
+door
+
