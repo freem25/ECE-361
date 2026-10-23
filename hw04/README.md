@@ -17,7 +17,7 @@ This builds the `events` program using GCC with C11 and warning flags.
 The `events` program reads event names from standard input. For example:
 
 ```bash
-./events < door.txt
+./events < data/door.txt
 ```
 
 It ignores blank lines and lines starting with `#`, counts valid names, and prints the results alphabetically, followed by a summary showing the number of different names and rejected lines.
