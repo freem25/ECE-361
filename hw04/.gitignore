@@ -1,0 +1,7 @@
+# Compiled object files
+*.o
+
+# Homework 4 test executables
+/test_tally
+/test_tally_full
+/test_tally_sanitized
