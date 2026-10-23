@@ -5,3 +5,5 @@
 /test_tally
 /test_tally_full
 /test_tally_sanitized
+/events
+/tests/test_tally
