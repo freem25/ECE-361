@@ -1,0 +1,14 @@
+# Week 5 draft for Project 29 Rule 3; not yet an executable scenario test.
+start 1791273600
+# tick  temp  rh    switches
+0       80.0  15.0  0x0
+1       80.0  15.0  0x1    # POWER on
+2       80.0  15.0  0x3    # SESSION_START pressed (once READY)
+3       77.5  15.0  0x1    # heater needs to heat again
+4       77.5  40.1  0x1    # block heater at high humidity
+5       77.5  35.0  0x1    # remain blocked
+6       77.5  30.0  0x1    # still blocked at boundary
+7       77.5  29.9  0x1    # humidity lockout clears
+8       80.0  29.9  0x1    # heater off at 80 C
+9       80.0  29.9  0x5    # SESSION_END pressed
+10      39.9  29.9  0x0    # cooldown complete

@@ -1,0 +1,13 @@
+# Week 5 draft; expected trace cannot be generated until scenario replay exists.
+start 1791273600
+# tick  temp  rh  switches
+0       23.5  15  0x0
+1       23.5  15  0x1    # POWER on; PREHEAT
+5       77.9  15  0x1
+6       78.0  15  0x1    # READY threshold
+10      80.0  15  0x1    # heater-off threshold
+12      80.0  15  0x3    # SESSION_START pressed
+13      79.0  15  0x1    # SESSION_START released
+20      79.0  15  0x5    # SESSION_END pressed
+21      79.0  15  0x1    # SESSION_END released
+22      39.9  15  0x0    # cooled below 40 C; POWER off
