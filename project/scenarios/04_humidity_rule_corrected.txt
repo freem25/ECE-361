@@ -1,0 +1,20 @@
+
+# Sauna Controller - Corrected humidity lockout scenario
+# Tests heater operation during SESSION and humidity lockout.
+
+start 1791273600
+
+# tick  temp  rh    switches
+
+0       80.0  15.0  0x0
+1       80.0  15.0  0x1
+2       80.0  15.0  0x1
+3       80.0  15.0  0x3
+4       77.5  15.0  0x1
+5       77.5  40.1  0x1
+6       77.5  35.0  0x1
+7       77.5  30.0  0x1
+8       77.5  29.9  0x1
+9       80.0  29.9  0x1
+10      80.0  29.9  0x5
+11      39.9  29.9  0x0

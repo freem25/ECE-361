@@ -78,13 +78,31 @@ Contains helper functions used by the controller.
 
 Handles messages and status information displayed to the user.
 
-## 6. Current Progress
 
-The project currently has all five module pairs created as stubs.
+## 6. Current Integration Progress
 
-The main program initializes the iom361 simulator with 3 switches and 3 LEDs and prints "Sauna Controller".
+The project has moved beyond its initial module skeleton.
 
-The complete control logic and hardware behavior will be implemented in later assignments.
+The sensor module reads temperature and humidity through the
+iom361 hardware simulator.
+
+The FSM module implements the five sauna states using a
+two-dimensional transition table.
+
+The main program now loads scenario files and replays sensor
+and switch inputs one second at a time.
+
+The controller currently supports:
+- State transitions and switch-edge detection.
+- Heater temperature hysteresis.
+- Humidity-based heater lockout during SESSION.
+- Heater, vent, and ready lamp outputs.
+- RGB LED indications for all five operating states.
+- A packed 32-bit status word.
+- Timestamped scenario traces.
+
+Storage, circular-buffer, and reporting functionality
+still require further integration and testing.
 
 
 ## 7. Week 5: Finite State Machine (FSM)
@@ -208,11 +226,135 @@ state (colors will be selected before hardware output integration).
 - No independent overtemperature emergency threshold was provided in
   the assignment; no arbitrary limit is invented here.
 
+
 ### Implementation and testing status
 
-The Week 5 FSM table and dedicated unit tests are implemented. Actual
-switch-edge detection, timestamp-based timeout detection, heater/vent
-outputs, and scenario replay remain to be connected to `main.c` in
-subsequent work. The sample scenarios are inputs only until that replay
-is implemented; they must not be represented as passing end-to-end
-scenario tests yet.
+The Week 5 FSM transition table and its 16 dedicated tests
+are implemented and passing.
+
+The FSM has now been connected to main.c. The replay loop
+generates events from switch positions, temperature,
+humidity, and elapsed time.
+
+Scenario replay, heater hysteresis, humidity protection,
+standard LED outputs, and RGB LED outputs have been
+implemented and manually verified.
+
+The normal scenario, temperature threshold scenario, and
+corrected humidity scenario have produced the expected
+state transitions and outputs.
+
+The 900-second timeout has been checked in the FSM unit
+tests but still requires end-to-end scenario testing.
+
+Automated scenario trace comparisons and full integration
+of the storage, auxiliary, and reporting modules remain
+future work.
+
+
+
+## 8. Week 6: Scenario Replay and Hardware Integration
+
+### Overview
+
+The Sauna Controller now integrates the Homework 6 scenario loader and sensor-reading implementation with the existing table-driven FSM.
+
+The program loads scenario files, advances the simulated clock by one second per tick, reads the hardware registers, determines FSM events, controls the heater and LEDs, and prints a timestamped trace.
+
+### Scenario Replay
+
+The scenario loader accepts files containing a Unix starting timestamp followed by temperature, humidity, and switch values at specified ticks.
+
+Values remain unchanged between scenario entries. The loader supports up to 1,000 data entries.
+
+The current replay implementation requires the first scenario entry to occur at tick 0.
+
+### FSM Integration
+
+The program uses the existing `fsm_next_state()` transition table to determine the next operating state.
+
+The normal operating sequence is:
+
+OFF → PREHEAT → READY → SESSION → COOLDOWN → OFF
+
+The POWER switch is interpreted as a level input. SESSION_START and SESSION_END are detected as rising-edge events.
+
+The program also tracks the elapsed session time to enforce the 900-second session timeout.
+
+### Temperature Hysteresis
+
+The heater follows these rules during active operation:
+
+- Below 78.0°C: heater ON.
+- At or above 80.0°C: heater OFF.
+- From 78.0°C to below 80.0°C: preserve the previous heater state.
+- OFF and COOLDOWN: heater OFF.
+
+This hysteresis prevents rapid heater switching near the temperature thresholds.
+
+### Humidity Protection
+
+During SESSION, humidity above 40.0% activates heater lockout.
+
+The lockout remains active until humidity falls strictly below 30.0%.
+
+When lockout is active, the heater stays OFF regardless of temperature.
+
+### LED Outputs
+
+The three standard LEDs have these assignments:
+
+| Bit | LED | Meaning |
+|---|---|---|
+| 0 | HEATER | Heater enabled |
+| 1 | VENT | Vent open during COOLDOWN |
+| 2 | READY_LAMP | Controller in READY |
+
+### RGB LED State Colors
+
+| State | Color | RGB register |
+|---|---|---|
+| OFF | Disabled | `0x00000000` |
+| PREHEAT | Red | `0x80FF0000` |
+| READY | Green | `0x8000FF00` |
+| SESSION | Blue | `0x800000FF` |
+| COOLDOWN | Cyan | `0x8000FFFF` |
+
+The RGB register is written through the `iom361` hardware interface.
+
+### Packed 32-Bit Status Word
+
+The status word is implemented in `sauna_status.c` using the Homework 1 `get_field()` and `set_field()` functions.
+
+| Bit positions | Field |
+|---|---|
+| 0–2 | FSM state |
+| 3 | HEATER |
+| 4 | VENT |
+| 5 | READY_LAMP |
+| 6 | Humidity lockout |
+| 7–31 | Unused; zero |
+
+State encodings are OFF = 0, PREHEAT = 1, READY = 2, SESSION = 3, and COOLDOWN = 4.
+
+The functions `sauna_status_pack()` and `sauna_status_unpack()` convert between individual fields and the packed 32-bit representation.
+
+### Testing and Verification
+
+The following functionality has been verified:
+
+- Sensor readings and switch values replay correctly.
+- The normal scenario transitions through all five states.
+- Heater hysteresis works at 78.0°C and 80.0°C.
+- Humidity lockout activates above 40.0% and clears below 30.0%.
+- The vent and ready lamp respond to the FSM state.
+- The RGB LED register matches the selected state colors.
+- Status-word packing and unpacking recover the expected fields.
+
+The current test suite includes 3 passing storage checks, 16 passing FSM tests, and 8 passing status-word tests.
+
+### Remaining Project Work
+
+The replay loop currently initializes the storage, auxiliary, and reporting modules, but does not yet fully integrate record insertion, circular-buffer updates, or report generation.
+
+Additional scenario regression tests and the remaining project-specific data-structure requirements will be completed in later development.

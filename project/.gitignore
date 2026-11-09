@@ -3,3 +3,10 @@ sauna
 iom361_r4.tar.gz
 iom361_r4/
 /test_store_week4
+# Generated test executables
+/test_fsm
+/test_sauna_status
+/test_store_week4
+
+# Local backup files
+*.bak

@@ -5,34 +5,20 @@
 #include <stdint.h>
 #include <time.h>
 
-/* One sensor reading with its timestamp,
-   temperature in Celsius, and relative humidity. */
+/* Stores one sensor reading and its timestamp. */
 typedef struct {
-    time_t timestamp;
-    float temperature;
-    float humidity;
+    time_t timestamp;    /* Unix timestamp */
+    float temperature;   /* Temperature in Celsius */
+    float humidity;      /* Relative humidity percentage */
 } reading_t;
 
 /* Initialize the sensor module. */
 void sensor_init(void);
 
-/* Read temperature and humidity from the sensor.
-   Returns status through the int return value. */
-int sensor_read(uint32_t *base,
-                float *temp_c,
-                float *rh_pct);
-
-#endif
-#ifndef SENSOR_H
-#define SENSOR_H
-
-#include <stdint.h>
-
-/* Initialize the sensor module. */
-void sensor_init(void);
-
-int sensor_read(uint32_t *base,
-		float *temp_c,
-		float *rh_pct);
+/* Read temperature and humidity from iom361.
+   Store the timestamp and rounded measurements in *r.
+   Return 0 on success, or an error code on failure.
+   On failure, the reading remains unchanged. */
+int sensor_read(uint32_t *base, time_t now, reading_t *r);
 
 #endif
