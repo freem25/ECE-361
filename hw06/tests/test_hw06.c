@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <time.h>
 
+#include "scenario.h"
 #include "sensor.h"
 #include "iom361_r4.h"
 #include "panel.h"
@@ -136,6 +137,89 @@ int main(void)
     check(panel_led(base, -1, 1) == -1 &&
           panel_toggle(base, 32) == -1,
           "Invalid LED numbers are rejected");
+
+
+    /* ==========================================
+       PART 3: SCENARIO TESTS
+       ========================================== */
+
+    /* TEST 13: Load a valid scenario file. */
+    scenario_t scenario;
+
+    int load_rc = scenario_load(
+        "scenarios/hold_values.txt", &scenario);
+
+    check(load_rc == 0,
+          "Valid scenario loads successfully");
+
+    /* TEST 14: Verify start time and entry count. */
+    check(load_rc == 0 &&
+          scenario.start == (time_t)1791273600 &&
+          scenario.count == 3,
+          "Scenario timestamp and count are correct");
+
+    /* TEST 15: Values at tick 0. */
+    const scenario_line_t *line =
+        scenario_at_tick(&scenario, 0);
+
+    check(line != NULL &&
+          line->temp_c == 20.0f &&
+          line->rh_pct == 40.0f &&
+          line->switches == 0x0u,
+          "Scenario values at tick 0 are correct");
+
+    /* TEST 16: Tick 1 must retain tick 0 values. */
+    line = scenario_at_tick(&scenario, 1);
+
+    check(line != NULL &&
+          line->tick == 0 &&
+          line->temp_c == 20.0f,
+          "Scenario values hold at tick 1");
+
+    /* TEST 17: Tick 4 must retain tick 2 values. */
+    line = scenario_at_tick(&scenario, 4);
+
+    check(line != NULL &&
+          line->tick == 2 &&
+          line->temp_c == 21.5f &&
+          line->switches == 0x1u,
+          "Scenario values hold at tick 4");
+
+    /* TEST 18: Tick 5 uses the new values. */
+    line = scenario_at_tick(&scenario, 5);
+
+    check(line != NULL &&
+          line->tick == 5 &&
+          line->rh_pct == 45.0f &&
+          line->switches == 0x3u,
+          "Scenario updates values at tick 5");
+
+
+    /* ==========================================
+       PART 3: INVALID SCENARIO TESTS
+       ========================================== */
+
+    /* TEST 19: Reject a missing start timestamp. */
+    load_rc = scenario_load(
+        "tests/fixtures/no_start.txt", &scenario);
+
+    check(load_rc == 1,
+          "Scenario without start is rejected at line 1");
+
+    /* TEST 20: Reject a missing data field. */
+    load_rc = scenario_load(
+        "tests/fixtures/missing_field.txt", &scenario);
+
+    check(load_rc == 3,
+          "Scenario missing field is rejected at line 3");
+
+    /* TEST 21: Reject non-increasing ticks. */
+    load_rc = scenario_load(
+        "tests/fixtures/bad_ticks.txt", &scenario);
+
+    check(load_rc == 4,
+          "Scenario duplicate tick is rejected at line 4");
+
 
 /* Display final results for all Part 1 and Part 2 tests. */
 printf("\nTests run: %d\n", tests_run);

@@ -1,0 +1,12 @@
+
+# Homework 6 - Test releases and repeated presses
+start 1791273600
+
+# tick temp rh switches
+0 20.0 40.0 0x0
+1 20.0 40.0 0x1
+3 20.0 40.0 0x0
+4 20.0 40.0 0x1
+5 21.0 45.0 0x3
+6 21.0 45.0 0x0
+7 21.0 45.0 0x3
