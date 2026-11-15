@@ -49,12 +49,28 @@ int main(int argc, char *argv[])
     /* Prevent automatic hardware output from mixing with traces. */
     iom361_set_display(false);
 
+
     /* Initialize the existing project modules. */
     sensor_init();
     fsm_init();
     store_init();
     aux_init();
     report_init();
+
+    /*
+     * Create the circular buffer for sensor readings.
+     *
+     * The buffer holds the latest 30 readings.
+     * New readings overwrite the oldest when full.
+     */
+    aux_t *buffer = aux_create();
+
+    /* Stop if memory allocation fails. */
+    if (buffer == NULL) {
+        fprintf(stderr, "Failed to create circular buffer\n");
+        return 1;
+    }
+
 
     /* Get the final scenario tick. */
     uint32_t last_tick = scenario.lines[scenario.count - 1].tick;
@@ -84,6 +100,9 @@ int humidity_lockout = 0;
         if (line == NULL) {
             fprintf(stderr, "No values at tick %u\n",
                     (unsigned)tick);
+
+           /* Free the circular buffer before exiting. */
+            aux_destroy(buffer);
             return 1;
         }
 
@@ -101,8 +120,26 @@ int humidity_lockout = 0;
 
         if (rc != 0) {
             fprintf(stderr, "Sensor read failed: %d\n", rc);
+           /* Free the circular buffer before exiting. */
+            aux_destroy(buffer);
             return 1;
         }
+
+
+        /*
+         * Store the current sensor reading in the circular buffer.
+         *
+         * The buffer keeps the 30 most recent readings.
+         * When full, the oldest reading is overwritten.
+         */
+        if (aux_add(buffer, &reading) != 0) {
+            fprintf(stderr, "Failed to add sensor reading\n");
+
+            /* Release the allocated buffer before exiting. */
+            aux_destroy(buffer);
+            return 1;
+        }
+
 
         /* Read the switch register. */
         uint32_t switches =
@@ -110,6 +147,8 @@ int humidity_lockout = 0;
 
         if (rc != 0) {
             fprintf(stderr, "Switch read failed: %d\n", rc);
+           /* Free the circular buffer before exiting. */
+            aux_destroy(buffer);
             return 1;
         }
 
@@ -264,6 +303,8 @@ int humidity_lockout = 0;
 
         if (rc != 0) {
             fprintf(stderr, "LED write failed: %d\n", rc);
+           /* Free the circular buffer before exiting. */
+            aux_destroy(buffer);
             return 1;
         }
 
@@ -274,6 +315,8 @@ int humidity_lockout = 0;
 
         if (rc != 0) {
             fprintf(stderr, "LED read failed: %d\n", rc);
+           /* Free the circular buffer before exiting. */
+            aux_destroy(buffer);
             return 1;
         }
 
@@ -328,6 +371,8 @@ uint32_t status = sauna_status_pack(
 
         if (rc != 0) {
             fprintf(stderr, "RGB LED write failed: %d\n", rc);
+           /* Free the circular buffer before exiting. */
+            aux_destroy(buffer);
             return 1;
         }
 
@@ -344,8 +389,11 @@ uint32_t status = sauna_status_pack(
             strftime(time_string, sizeof(time_string),
                      "%Y-%m-%d %H:%M:%S", utc) == 0) {
             fprintf(stderr, "Time formatting failed\n");
+           /* Free the circular buffer before exiting. */
+            aux_destroy(buffer);
             return 1;
         }
+
 
 
 
@@ -360,10 +408,20 @@ uint32_t status = sauna_status_pack(
                (unsigned)status);
 
 
+
         if (tick == last_tick) {
             break;
         }
     }
 
+    /*
+     * The scenario replay has finished.
+     *
+     * Free the dynamically allocated circular buffer
+     * and all memory associated with it.
+     */
+    aux_destroy(buffer);
+
+    /* Return success after completing the simulation. */
     return 0;
 }

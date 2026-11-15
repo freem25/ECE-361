@@ -34,16 +34,20 @@ test_sauna_status: tests/test_sauna_status.c sauna_status.c bits.c sauna_status.
 	$(CC) $(CFLAGS) -I. tests/test_sauna_status.c sauna_status.c bits.c -o test_sauna_status
 
 
+# Build the S3 circular buffer unit tests.
+tests/test_aux: tests/test_aux.c aux.c aux.h sensor.h
+	$(CC) $(CFLAGS) -I. tests/test_aux.c aux.c -o tests/test_aux
+
 
 
 # Run the sauna scenario and all current unit tests.
-test: sauna test_store_week4 test_fsm test_sauna_status
+test: sauna test_store_week4 test_fsm test_sauna_status tests/test_aux
 	./sauna scenarios/01_normal.txt > /dev/null
 	./test_store_week4
 	./test_fsm
 	./test_sauna_status
-
+	./tests/test_aux
 
 
 clean:
-	rm -f sauna $(OBJS) test_store_week4 test_fsm test_sauna_status
+	rm -f sauna $(OBJS) test_store_week4 test_fsm test_sauna_status tests/test_aux

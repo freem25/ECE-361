@@ -358,3 +358,136 @@ The current test suite includes 3 passing storage checks, 16 passing FSM tests, 
 The replay loop currently initializes the storage, auxiliary, and reporting modules, but does not yet fully integrate record insertion, circular-buffer updates, or report generation.
 
 Additional scenario regression tests and the remaining project-specific data-structure requirements will be completed in later development.
+
+## 9. Week 7: S3 Circular Buffer Implementation
+
+### Overview
+
+The auxiliary module (aux.c and aux.h) implements
+the S3 circular buffer required for the Sauna Controller.
+
+The circular buffer stores the 30 most recent sensor
+readings. Each reading contains a Unix timestamp,
+temperature, and relative humidity.
+
+When the buffer becomes full, new readings overwrite
+the oldest readings automatically.
+
+### Data Structure
+
+The circular buffer uses an opaque structure
+defined privately in aux.c.
+
+The structure contains:
+
+- readings: A fixed array of 30 reading_t values.
+- head: The index where the next reading is inserted.
+- count: The number of valid readings currently stored.
+
+The maximum capacity is defined by AUX_CAPACITY in aux.h.
+
+The buffer is dynamically allocated using malloc()
+and released using free().
+
+### Adding Readings
+
+The aux_add() function inserts a new sensor reading
+at the position indicated by head.
+
+After inserting, head advances using:
+
+    head = (head + 1) % AUX_CAPACITY;
+
+The modulo operation causes the head index to wrap
+back to 0 after reaching the end of the array.
+
+The count increases until it reaches 30.
+
+Once full, count remains at 30 and each new reading
+replaces the oldest stored reading.
+
+### Tracking the Newest and Oldest Readings
+
+The head index always identifies the next position
+where a reading will be written.
+
+The newest reading is located one position before head.
+
+The aux_get_newest() function calculates the position
+of the requested reading using:
+
+    position = (head + AUX_CAPACITY - 1 - index)
+               % AUX_CAPACITY;
+
+Index 0 retrieves the newest reading.
+Index 1 retrieves the second-newest reading.
+
+When the buffer contains N readings, index N - 1
+retrieves the oldest reading.
+
+Invalid indexes are rejected without modifying
+the output reading.
+
+### Circular Buffer Compared with a Shifting Array
+
+A circular buffer is efficient because inserting a
+new reading does not require moving existing values.
+
+Adding a reading takes O(1) time.
+Retrieving a reading by index takes O(1) time.
+Checking the count or full status takes O(1) time.
+
+A conventional array that stores readings in
+newest-first order would require shifting existing
+elements whenever a new reading is inserted.
+
+That insertion would take O(N) time, while retrieval
+by index would still take O(1) time.
+
+The circular buffer is preferable because the sauna
+controller receives sensor readings continuously
+and must retain only the 30 most recent readings.
+
+### Integration with main.c
+
+The main program creates the circular buffer
+using aux_create() before beginning scenario replay.
+
+Each successfully acquired sensor reading is
+inserted into the buffer using aux_add().
+
+When the scenario finishes, main.c releases
+the buffer using aux_destroy().
+
+The buffer is also destroyed on error paths
+after successful creation.
+
+The existing FSM, hardware outputs, and trace
+format remain unchanged.
+
+### Testing and Verification
+
+Ten dedicated tests were implemented in
+tests/test_aux.c.
+
+The tests verify:
+
+- Creating an empty buffer.
+- Reading from an empty buffer.
+- Adding and retrieving a single reading.
+- Filling all 30 positions.
+- Retrieving readings newest first.
+- Overwriting the oldest reading on insertion 31.
+- Repeated wraparound after 100 insertions.
+- Invalid arguments and indexes.
+- Two independent buffers.
+- Destroying a nonempty buffer.
+
+All 10 tests passed.
+
+The full Sauna Controller test suite also passed.
+
+The project was rebuilt and tested with
+AddressSanitizer and UndefinedBehaviorSanitizer.
+
+No memory errors were reported.
