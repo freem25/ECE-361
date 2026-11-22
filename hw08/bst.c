@@ -10,27 +10,28 @@ struct node {
     struct node *rightChild;
 };
 
-// The BST structure replaces the original global root.
-// Each tree keeps its own root and number of nodes.
+// Replaces the original global root variable.
+// Each BST has its own root and node count.
 struct bst {
     struct node *root;
     size_t count;
 };
 
-// Helper function to free all nodes in a subtree.
-// New function; the original program did not free nodes.
+// New helper function to free every node in a subtree.
+// The original program did not free allocated nodes.
 static void destroy_nodes(struct node *current) {
     if (current == NULL) {
         return;
     }
 
+    // Free both child subtrees before the current node.
     destroy_nodes(current->leftChild);
     destroy_nodes(current->rightChild);
     free(current);
 }
 
-// Helper function to calculate tree height.
-// New function; the original program did not calculate height.
+// New helper function to calculate tree height.
+// Height is measured by the number of nodes.
 static size_t height_nodes(const struct node *current) {
     if (current == NULL) {
         return 0;
@@ -39,7 +40,7 @@ static size_t height_nodes(const struct node *current) {
     size_t left = height_nodes(current->leftChild);
     size_t right = height_nodes(current->rightChild);
 
-    // Count the current node plus the taller subtree.
+    // Count this node plus the taller subtree.
     return 1 + (left > right ? left : right);
 }
 
@@ -48,6 +49,7 @@ static size_t height_nodes(const struct node *current) {
 bst_t *bst_create(void) {
     bst_t *t = malloc(sizeof(*t));
 
+    // Return NULL if memory allocation fails.
     if (t == NULL) {
         return NULL;
     }
@@ -58,7 +60,7 @@ bst_t *bst_create(void) {
     return t;
 }
 
-// Destroys the tree and frees allocated memory.
+// Frees the entire tree and its allocated memory.
 // New function; the original program had no destroy function.
 void bst_destroy(bst_t *t) {
     if (t == NULL) {
@@ -76,18 +78,19 @@ int bst_insert(bst_t *t, int key) {
         return -1;
     }
 
-    // Allocate a new node for the key.
+    // Allocate memory for a new node.
     struct node *tempNode = malloc(sizeof(*tempNode));
 
     if (tempNode == NULL) {
         return -1;
     }
 
+    // Initialize the new node.
     tempNode->data = key;
     tempNode->leftChild = NULL;
     tempNode->rightChild = NULL;
 
-    // If the tree is empty, the new node becomes the root.
+    // The first inserted node becomes the root.
     if (t->root == NULL) {
         t->root = tempNode;
     } else {
@@ -98,6 +101,7 @@ int bst_insert(bst_t *t, int key) {
         while (1) {
             parent = current;
 
+            // Smaller keys are inserted to the left.
             if (key < parent->data) {
                 current = current->leftChild;
 
@@ -106,6 +110,7 @@ int bst_insert(bst_t *t, int key) {
                     break;
                 }
             } else {
+                // Equal or larger keys are inserted to the right.
                 current = current->rightChild;
 
                 if (current == NULL) {
@@ -116,52 +121,52 @@ int bst_insert(bst_t *t, int key) {
         }
     }
 
-    // Increase the number of stored keys.
+    // Update the total number of stored keys.
     t->count++;
     return 0;
 }
 
 // Adapted from the original search() function.
-// Counts visited nodes instead of printing them.
-// The original search loop is intentionally preserved
-// for the crash investigation required in Part 2.
+// Searches without printing and counts visited nodes.
+// Fixed: checks for NULL before accessing node data.
 bool bst_contains(const bst_t *t, int key, size_t *visits) {
+    // Reset the optional visit counter.
     if (visits != NULL) {
         *visits = 0;
     }
 
+    // A NULL tree cannot contain any keys.
     if (t == NULL) {
         return false;
     }
 
     const struct node *current = t->root;
 
-    // Original search loop, retained for Part 2 testing.
-    while (current->data != key) {
+    // Continue searching while a valid node exists.
+    while (current != NULL) {
+        // Count each node compared during the search.
         if (visits != NULL) {
             (*visits)++;
         }
 
-        if (current->data > key) {
+        // The requested key was found.
+        if (current->data == key) {
+            return true;
+        }
+
+        // Follow the appropriate child pointer.
+        if (key < current->data) {
             current = current->leftChild;
         } else {
             current = current->rightChild;
         }
-
-        if (current == NULL) {
-            return false;
-        }
     }
 
-    // Count the node where the key was found.
-    if (visits != NULL) {
-        (*visits)++;
-    }
-
-    return true;
+    // Reaching NULL means the key was not found.
+    return false;
 }
 
-// Returns the number of keys in the tree.
+// Returns the total number of keys in the tree.
 // New function; the original program did not track size.
 size_t bst_size(const bst_t *t) {
     if (t == NULL) {
@@ -171,7 +176,7 @@ size_t bst_size(const bst_t *t) {
     return t->count;
 }
 
-// Returns the height of the tree in number of nodes.
+// Returns the height measured in number of nodes.
 // New function; uses the recursive height helper.
 size_t bst_height(const bst_t *t) {
     if (t == NULL) {
