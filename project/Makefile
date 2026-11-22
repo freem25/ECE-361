@@ -26,6 +26,13 @@ report.o: report.c report.h
 test_store_week4: test_store_week4.c store.c store.h sensor.h
 	$(CC) $(CFLAGS) test_store_week4.c store.c -o test_store_week4
 
+
+# Build the Week 8 binary search tree tests.
+test_store_bst: tests/test_store_bst.c store.c store.h sensor.h
+	$(CC) $(CFLAGS) -I. tests/test_store_bst.c store.c -o test_store_bst
+
+
+
 test_fsm: tests/test_fsm.c fsm.c fsm.h
 	$(CC) $(CFLAGS) tests/test_fsm.c fsm.c -o test_fsm
 
@@ -40,14 +47,20 @@ tests/test_aux: tests/test_aux.c aux.c aux.h sensor.h
 
 
 
+
 # Run the sauna scenario and all current unit tests.
-test: sauna test_store_week4 test_fsm test_sauna_status tests/test_aux
+test: sauna test_store_week4 test_store_bst test_fsm test_sauna_status tests/test_aux
 	./sauna scenarios/01_normal.txt > /dev/null
 	./test_store_week4
+	./test_store_bst
 	./test_fsm
 	./test_sauna_status
 	./tests/test_aux
 
 
+
+
+# Remove all compiled executables and object files.
 clean:
-	rm -f sauna $(OBJS) test_store_week4 test_fsm test_sauna_status tests/test_aux
+	rm -f sauna $(OBJS) test_store_week4 test_store_bst test_fsm test_sauna_status tests/test_aux
+

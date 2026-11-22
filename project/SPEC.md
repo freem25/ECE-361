@@ -68,7 +68,7 @@ Controls the state machine and transitions between operating states.
 
 **store.c / store.h**
 
-Stores the most recent 30 sensor readings. A binary search tree will be used where required by the assignment.
+Stores complete sauna records in a binary search tree ordered by quantized humidity. The separate auxiliary circular buffer retains the 30 most recent sensor readings.
 
 **aux.c / aux.h**
 
@@ -491,3 +491,125 @@ The project was rebuilt and tested with
 AddressSanitizer and UndefinedBehaviorSanitizer.
 
 No memory errors were reported.
+
+
+
+## 10. Week 8: K4 Binary Search Tree Implementation
+
+### Overview
+
+The sauna controller's storage module now uses a
+binary search tree instead of the temporary sorted array.
+
+The tree is implemented in store.c, while store.h
+provides the public interface.
+
+The store structure is opaque, so other modules
+cannot directly access its internal nodes.
+
+### Stored Records
+
+Each tree node stores a complete record_t containing:
+
+- Sensor reading (timestamp, temperature, humidity)
+- Current sauna state
+- Packed 32-bit status word
+
+Each node also contains pointers to its left and
+right children.
+
+### Humidity Keys
+
+The K4 storage structure organizes records by
+relative humidity, quantized to whole-percent keys.
+
+The humidity_key() function converts a humidity
+measurement to an integer by discarding its
+fractional part.
+
+For example:
+
+- 45.2% becomes key 45.
+- 45.7% becomes key 45.
+- 46.0% becomes key 46.
+
+The record_compare() function compares these keys.
+
+### Duplicate Key Handling
+
+Duplicate humidity keys are retained as separate
+tree nodes rather than discarded.
+
+When inserting a record:
+
+- A smaller key goes into the left subtree.
+- An equal or larger key goes into the right subtree.
+
+This preserves every sensor record, even when
+multiple readings have the same humidity key.
+
+Each record retains its original timestamp,
+temperature, state, and status word.
+
+### Binary Search Tree Operations
+
+The store module supports:
+
+- store_create(): creates an empty tree.
+- store_insert(): inserts a complete record.
+- store_find(): finds one record by humidity key.
+- store_find_all(): visits every matching record.
+- store_inorder(): visits records in key order.
+- store_count(): returns the total record count.
+- store_height(): returns the height in nodes.
+- store_destroy(): frees all allocated tree memory.
+
+The tree uses dynamically allocated nodes.
+
+### In-Order Traversal
+
+The tree visits the left subtree first, then the
+current node, and finally the right subtree.
+
+This produces records in ascending humidity-key
+order, including duplicate records.
+
+### Tree Height and Performance
+
+Tree height depends on insertion order.
+
+A relatively balanced tree allows searches to
+visit fewer nodes, while sorted insertion can
+produce a tall, unbalanced tree.
+
+In the worst case, insertion and searching can
+require O(n) time.
+
+### Testing and Verification
+
+The Week 8 BST tests verify:
+
+- Creating and destroying an empty tree.
+- Comparing humidity keys.
+- Handling exact 1% boundaries.
+- Retaining duplicate keys and timestamps.
+- Finding records by humidity key.
+- Finding all matching records.
+- Rejecting missing keys.
+- In-order traversal.
+- Counting records and measuring height.
+- Inserting 100 records.
+
+All 19 dedicated BST tests passed.
+
+The full project test suite also passed with
+65 tests and zero failures.
+
+### Integration Status
+
+The binary search tree storage module is implemented
+and unit-tested.
+
+Integration of record insertion into the main
+scenario replay and reporting functionality
+remains future project work.
