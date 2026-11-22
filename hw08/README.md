@@ -78,3 +78,53 @@ passed without sanitizer errors.
 Remove generated executables:
 
     make clean
+
+
+## Part 3: What Order Does to a Tree
+
+The treestats program reads integers from standard input,
+inserts them into a binary search tree, and reports the
+number of keys and the resulting tree height.
+
+### Increasing Order
+
+Command:
+
+    seq 1 1023 | ./treestats
+
+Output:
+
+    n 1023, height 1023
+
+### Shuffled Order
+
+Command:
+
+    seq 1 1023 | sort -R | ./treestats
+
+Output:
+
+    n 1023, height 25
+
+### Explanation
+
+Inserting keys in increasing order creates an unbalanced
+tree with a height of 1023, while inserting shuffled keys
+produced a much shorter tree with a height of 25.
+A taller tree can require more node visits during a search,
+whereas a shorter tree generally allows searches to finish
+with fewer visits.
+
+### Running treestats
+
+Build the program:
+
+    make
+
+Run with an input file:
+
+    ./treestats < input.txt
+
+The program prints the tree size and height, reports
+an empty tree when no integers are provided, and returns
+an error for invalid input.
